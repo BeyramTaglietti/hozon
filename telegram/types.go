@@ -30,3 +30,8 @@ func CreateTelegramDocumentRequest(chatId, document string) telegramDocumentRequ
 		DocumentPath: document,
 	}
 }
+
+type TelegramSettings struct {
+	TGBotToken string
+	TGChatID   string
+}

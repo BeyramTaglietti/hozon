@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"hozon/postgres"
+	"hozon/telegram"
 	"log"
 	"os"
 
@@ -51,6 +52,11 @@ Please use the suggested flags to interact with the application and provide your
 			os.Exit(1)
 		}
 
+		if frequency < 1 {
+			log.Println("Frequency must be greater than 0")
+			os.Exit(1)
+		}
+
 		token, err := cmd.Flags().GetString("tgtoken")
 		if err != nil {
 			log.Println("Error reading flag:", err)
@@ -63,7 +69,13 @@ Please use the suggested flags to interact with the application and provide your
 			os.Exit(1)
 		}
 
-		if name == "" || user == "" || password == "" || host == "" || frequency == 0 || token == "" || chatid == "" {
+		cleanBackupDir, err := cmd.Flags().GetBool("clean")
+		if err != nil {
+			log.Println("Error reading flag:", err)
+			os.Exit(1)
+		}
+
+		if name == "" || user == "" || password == "" || host == "" || token == "" || chatid == "" {
 			log.Println("Please provide all the required flags")
 			log.Println("Use --help for more information")
 			os.Exit(1)
@@ -76,8 +88,11 @@ Please use the suggested flags to interact with the application and provide your
 			DbHost:          host,
 			DbPort:          port,
 			BackupFrequency: frequency,
-			TGBotToken:      token,
-			TGChatID:        chatid,
+			CleanBackupDir:  cleanBackupDir,
+			TelegramSettings: telegram.TelegramSettings{
+				TGBotToken: token,
+				TGChatID:   chatid,
+			},
 		})
 	},
 }
@@ -95,7 +110,8 @@ func init() {
 	rootCmd.Flags().String("dbpass", "", "Your database password")
 	rootCmd.Flags().String("dbhost", "", "Your database host")
 	rootCmd.Flags().Int("dbport", 5432, "Your database port")
-	rootCmd.Flags().Int("frequency", 1, "Backup frequency in Minutes")
+	rootCmd.Flags().Int("frequency", 24, "Backup frequency in Hours")
 	rootCmd.Flags().String("tgtoken", "", "Telegram Bot Token")
 	rootCmd.Flags().String("tgchatid", "", "Telegram Chat ID")
+	rootCmd.Flags().Bool("clean", true, "Clean up the backup directory")
 }

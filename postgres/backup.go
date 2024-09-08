@@ -10,17 +10,34 @@ import (
 )
 
 type PGBackupSettings struct {
-	DbName          string
-	DbUser          string
-	DbPass          string
-	DbHost          string
-	DbPort          int
-	BackupFrequency int
-	TGBotToken      string
-	TGChatID        string
+	DbName           string
+	DbUser           string
+	DbPass           string
+	DbHost           string
+	DbPort           int
+	BackupFrequency  int
+	CleanBackupDir   bool
+	TelegramSettings telegram.TelegramSettings
 }
 
 func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
+
+	// delete previous backups
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to read backup directory: %v", err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		err := os.Remove(fmt.Sprintf("%s/%s", backupDir, file.Name()))
+		if err != nil {
+			return "", fmt.Errorf("failed to delete previous backup: %v", err)
+		}
+	}
 
 	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("HozonBackup_2006-01-02__15_04_05"))
 
@@ -37,7 +54,7 @@ func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dbSettings.DbPass))
 
-	_, err := cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("failed to execute pg_dump: %v", err)
 	}
@@ -46,40 +63,43 @@ func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
 }
 
 func InitBackupProcess(backupSettings PGBackupSettings) {
-	// telegram.SendGreeting(backupSettings.TGBotToken, backupSettings.TGChatID)
-	logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Starting backup process...", false)
+
+	tgSettings := backupSettings.TelegramSettings
+
+	telegram.SendGreeting(tgSettings.TGBotToken, tgSettings.TGChatID)
+	logBackup(backupSettings.TelegramSettings.TGBotToken, backupSettings.TelegramSettings.TGChatID, "Starting backup process...", false)
 
 	backupDir := "./backups"
 	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
 		err := os.MkdirAll(backupDir, 0755)
 		if err != nil {
-			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to create backup directory!", true)
+			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to create backup directory!", true)
 			os.Exit(1)
 		}
 	}
 
 	filePath, err := runBackup(backupSettings, backupDir)
 	if err != nil {
-		logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to backup database!", true)
+		logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to backup database!", true)
 		os.Exit(1)
 	}
 
-	logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "First backup completed successfully.", false)
-	sendFile(backupSettings.TGBotToken, backupSettings.TGChatID, filePath)
+	logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "First backup completed successfully.", false)
+	sendFile(tgSettings.TGBotToken, tgSettings.TGChatID, filePath)
 
-	ticker := time.NewTicker(time.Duration(backupSettings.BackupFrequency) * time.Second)
+	ticker := time.NewTicker(time.Duration(backupSettings.BackupFrequency) * time.Hour)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Starting scheduled backup process...", false)
+		logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Starting scheduled backup process...", false)
 
 		filePath, err := runBackup(backupSettings, backupDir)
 
 		if err != nil {
-			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
+			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
 		} else {
-			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Scheduled backup process completed successfully.", false)
-			sendFile(backupSettings.TGBotToken, backupSettings.TGChatID, filePath)
+			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Scheduled backup process completed successfully.", false)
+			sendFile(tgSettings.TGBotToken, tgSettings.TGChatID, filePath)
 		}
 	}
 }
