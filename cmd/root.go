@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"hozon/postgres"
 	"log"
 	"os"
@@ -52,7 +51,19 @@ Please use the suggested flags to interact with the application and provide your
 			os.Exit(1)
 		}
 
-		if name == "" || user == "" || password == "" || host == "" {
+		token, err := cmd.Flags().GetString("tgtoken")
+		if err != nil {
+			log.Println("Error reading flag:", err)
+			os.Exit(1)
+		}
+
+		chatid, err := cmd.Flags().GetString("tgchatid")
+		if err != nil {
+			log.Println("Error reading flag:", err)
+			os.Exit(1)
+		}
+
+		if name == "" || user == "" || password == "" || host == "" || frequency == 0 || token == "" || chatid == "" {
 			log.Println("Please provide all the required flags")
 			log.Println("Use --help for more information")
 			os.Exit(1)
@@ -65,13 +76,15 @@ Please use the suggested flags to interact with the application and provide your
 			DbHost:          host,
 			DbPort:          port,
 			BackupFrequency: frequency,
+			TGBotToken:      token,
+			TGChatID:        chatid,
 		})
 	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }
@@ -83,4 +96,6 @@ func init() {
 	rootCmd.Flags().String("dbhost", "", "Your database host")
 	rootCmd.Flags().Int("dbport", 5432, "Your database port")
 	rootCmd.Flags().Int("frequency", 1, "Backup frequency in Minutes")
+	rootCmd.Flags().String("tgtoken", "", "Telegram Bot Token")
+	rootCmd.Flags().String("tgchatid", "", "Telegram Chat ID")
 }

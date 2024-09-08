@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"hozon/telegram"
 	"log"
 	"os"
 	"os/exec"
@@ -15,9 +16,11 @@ type PGBackupSettings struct {
 	DbHost          string
 	DbPort          int
 	BackupFrequency int
+	TGBotToken      string
+	TGChatID        string
 }
 
-func runBackup(dbSettings PGBackupSettings, backupDir string) error {
+func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
 
 	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("HozonBackup_2006-01-02__15_04_05"))
 
@@ -36,41 +39,67 @@ func runBackup(dbSettings PGBackupSettings, backupDir string) error {
 
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to execute pg_dump: %v", err)
+		return "", fmt.Errorf("failed to execute pg_dump: %v", err)
 	}
 
-	return nil
+	return backupFile, nil
 }
 
-func InitBackupProcess(dbSettings PGBackupSettings) {
-	log.Println("Running first backup...")
+func InitBackupProcess(backupSettings PGBackupSettings) {
+	// telegram.SendGreeting(backupSettings.TGBotToken, backupSettings.TGChatID)
+	logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Starting backup process...", false)
 
 	backupDir := "./backups"
 	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
 		err := os.MkdirAll(backupDir, 0755)
 		if err != nil {
-			log.Default().Fatalf("failed to create backup directory: %v", err)
+			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to create backup directory!", true)
+			os.Exit(1)
 		}
 	}
 
-	err := runBackup(dbSettings, backupDir)
+	filePath, err := runBackup(backupSettings, backupDir)
 	if err != nil {
-		log.Fatalf("Failed to backup database: %v", err)
+		logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to backup database!", true)
+		os.Exit(1)
 	}
 
-	log.Println("First backup completed successfully.")
+	logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "First backup completed successfully.", false)
+	sendFile(backupSettings.TGBotToken, backupSettings.TGChatID, filePath)
 
-	ticker := time.NewTicker(time.Duration(dbSettings.BackupFrequency) * time.Millisecond * 400)
+	ticker := time.NewTicker(time.Duration(backupSettings.BackupFrequency) * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		log.Println("Starting scheduled backup process...")
-		err = runBackup(dbSettings, backupDir)
+		logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Starting scheduled backup process...", false)
+
+		filePath, err := runBackup(backupSettings, backupDir)
 
 		if err != nil {
-			log.Fatalf("Failed to backup database: %v", err)
+			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
+		} else {
+			logBackup(backupSettings.TGBotToken, backupSettings.TGChatID, "Scheduled backup process completed successfully.", false)
+			sendFile(backupSettings.TGBotToken, backupSettings.TGChatID, filePath)
 		}
-
-		log.Println("Scheduled backup process completed successfully.")
 	}
+}
+
+func logBackup(token string, chatid string, message string, error bool) {
+	if error {
+		message = fmt.Sprintf("Error: %s", message)
+	}
+
+	if error {
+		log.Fatal(message)
+	} else {
+		log.Println(message)
+	}
+
+	go telegram.SendMessage(token,
+		telegram.CreateTelegramTextRequest(chatid, message),
+	)
+}
+
+func sendFile(token string, chatid string, filePath string) {
+	go telegram.SendFile(token, telegram.CreateTelegramDocumentRequest(chatid, filePath))
 }
