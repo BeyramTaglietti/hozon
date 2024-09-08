@@ -52,7 +52,7 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
 ### Prerequisites
 
 - Golang 1.23 or higher
-- pg_dump (part of PostgreSQL)
+- pg_dump (part of PostgreSQL, already available if building using the Dockerfile approach)
 - Telegram bot token and chat ID
 
 ### Steps (From Source)
@@ -70,7 +70,7 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
    go build -o hozon main.go
    ```
 
-3. #### Configure your telehram bot token and chat ID
+3. #### Configure your telegram bot token and chat ID
 
    - Create a new bot on Telegram via BotFather and obtain your bot token. [Learn more](https://core.telegram.org/bots#how-do-i-create-a-bot)
    - Get your chat ID (you can use any bot you'd like, I purposefully did not include this functionality in Hozon to keep it simple, I'd suggest using [@getmyid_bot](https://t.me/getmyid_bot), just add it to any group/channel and receive the chat ID, you can even use your userID as the chatID and have Hozon send messages privately to you).
@@ -122,9 +122,11 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
 
    BACKUP_FREQUENCY=... # (int) in hours
    CLEAN_DIRECTORY=... # (bool) CLEAN_DIRECTORY=true will keep the backup directory clean, false will keep all backups
+
+   POSTGRES_VERSION=... # (int)
    ```
 
-3. #### Run docker compose up (make sure to provide the desidered POSTGRES VERSION in the Docker image ARGs in order for pg_dump to work correctly - Default is 15)
+3. #### Run docker compose up (make sure to provide the desidered POSTGRES VERSION inside your `.env` file in order for pg_dump to work correctly - Default is 16)
 
    ```bash
     docker compose up -d

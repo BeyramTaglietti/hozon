@@ -26,7 +26,7 @@ WORKDIR /root/
 COPY .env .env
 
 # Define a build argument for the PostgreSQL version
-ARG POSTGRES_VERSION=15
+ARG POSTGRES_VERSION=16
 
 # Install pg_dump from the specified PostgreSQL client package
 RUN apk --no-cache add "postgresql${POSTGRES_VERSION}-client"
