@@ -37,7 +37,7 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
 
 ## Size
 
-- The binary size is around **11MB (11,000KB)**
+- The binary size is around **8MB (8,000KB)**
 - The Docker image size is around **16MB (16,000KB)**
 
 ## Features

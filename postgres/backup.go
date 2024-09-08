@@ -75,14 +75,14 @@ func InitBackupProcess(postgresSettings PostgresSettings, telegramSettings teleg
 	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
 		err := os.MkdirAll(backupDir, 0755)
 		if err != nil {
-			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to create backup directory!", true)
+			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, fmt.Sprintf("Failed to create backup directory!\n%s", err), true)
 			os.Exit(1)
 		}
 	}
 
 	filePath, err := runBackup(postgresSettings, backupDir, backupSettings.CleanDirectory)
 	if err != nil {
-		logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to backup database!", true)
+		logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, fmt.Sprintf("Failed to backup database!\n%s", err), true)
 		os.Exit(1)
 	}
 
@@ -98,7 +98,7 @@ func InitBackupProcess(postgresSettings PostgresSettings, telegramSettings teleg
 		filePath, err := runBackup(postgresSettings, backupDir, backupSettings.CleanDirectory)
 
 		if err != nil {
-			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
+			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, fmt.Sprintf("Failed to run scheduled database backup! Process will not stop\n%s", err), true)
 		} else {
 			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Scheduled backup process completed successfully.", false)
 			sendFile(telegramSettings.TGBotToken, telegramSettings.TGChatID, filePath)
@@ -111,13 +111,17 @@ func logBackup(token string, chatid string, message string, error bool) {
 		message = fmt.Sprintf("Error: %s", message)
 	}
 
-	telegram.SendMessage(token,
-		telegram.CreateTelegramTextRequest(chatid, message),
-	)
-
 	if error {
+		telegram.SendMessage(
+			token, telegram.CreateTelegramTextRequest(
+				chatid, "There was an error in the backup process, please check your logs",
+			),
+		)
 		log.Fatal(message)
 	} else {
+		telegram.SendMessage(token,
+			telegram.CreateTelegramTextRequest(chatid, message),
+		)
 		log.Println(message)
 	}
 
