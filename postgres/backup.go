@@ -18,7 +18,7 @@ func Backup(dbSettings cli.OsArguments) error {
 		}
 	}
 
-	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("2006-01-02__15_04_05"))
+	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("HozonBackup_2006-01-02__15_04_05"))
 
 	cmd := exec.Command("pg_dump",
 		"-h", dbSettings.DbHost,

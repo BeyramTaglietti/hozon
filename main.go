@@ -5,22 +5,35 @@ import (
 	"hozon/cli"
 	"hozon/postgres"
 	"log"
+	"time"
 )
 
 func main() {
 	fmt.Println("Hozon started...")
 
-	dbSettings, err := cli.GetArguments()
+	cliSettings, err := cli.GetArguments()
 	if err != nil {
 		log.Fatalf("Failed to get arguments: %v", err)
 	}
 
-	fmt.Println("Starting backup process...")
-	err = postgres.Backup(dbSettings)
-
+	log.Println("Running first backup...")
+	err = postgres.Backup(cliSettings)
 	if err != nil {
 		log.Fatalf("Failed to backup database: %v", err)
 	}
+	log.Println("First backup completed successfully.")
 
-	fmt.Println("Backup process completed successfully.")
+	ticker := time.NewTicker(time.Duration(cliSettings.BackupFrequency) * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		log.Println("Starting scheduled backup process...")
+		err = postgres.Backup(cliSettings)
+
+		if err != nil {
+			log.Fatalf("Failed to backup database: %v", err)
+		}
+
+		log.Println("Scheduled backup process completed successfully.")
+	}
 }

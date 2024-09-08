@@ -8,19 +8,21 @@ import (
 )
 
 const (
-	db_name string = "--dbname"
-	db_user string = "--dbuser"
-	db_pass string = "--dbpass"
-	db_host string = "--dbhost"
-	db_port string = "--dbport"
+	db_name          string = "--dbname"
+	db_user          string = "--dbuser"
+	db_pass          string = "--dbpass"
+	db_host          string = "--dbhost"
+	db_port          string = "--dbport"
+	backup_frequency string = "--frequency"
 )
 
 type OsArguments struct {
-	DbName string
-	DbUser string
-	DbPass string
-	DbHost string
-	DbPort int
+	DbName          string
+	DbUser          string
+	DbPass          string
+	DbHost          string
+	DbPort          int
+	BackupFrequency int
 }
 
 func GetArguments() (OsArguments, error) {
@@ -55,12 +57,23 @@ func GetArguments() (OsArguments, error) {
 		return OsArguments{}, errors.New("invalid database port argument")
 	}
 
+	backupFrequency, ok := getSettingValue(os.Args, backup_frequency)
+	if !ok {
+		backupFrequency = "1"
+	}
+
+	frequency, err := strconv.Atoi(backupFrequency)
+	if err != nil {
+		return OsArguments{}, errors.New("invalid backup frequency argument")
+	}
+
 	arguments := OsArguments{
-		DbName: name,
-		DbUser: user,
-		DbPass: password,
-		DbHost: host,
-		DbPort: portNumber,
+		DbName:          name,
+		DbUser:          user,
+		DbPass:          password,
+		DbHost:          host,
+		DbPort:          portNumber,
+		BackupFrequency: frequency,
 	}
 
 	return arguments, nil
