@@ -46,7 +46,7 @@ Visit my [website](https://beyram.dev) to learn more about me, maybe you'll find
 }
 
 func sendMessageRequest(token string, request telegramTextRequest) (bool, error) {
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token)
+	url := fmt.Sprintf(baseURL, token, sendMessageEndpoint)
 
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -65,7 +65,7 @@ func sendMessageRequest(token string, request telegramTextRequest) (bool, error)
 }
 
 func sendFileRequest(token string, request telegramDocumentRequest) (bool, error) {
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendDocument", token)
+	url := fmt.Sprintf(baseURL, token, sendDocumentEndpoint)
 
 	body, contentType, err := createMultiPartForm(request)
 	if err != nil {
