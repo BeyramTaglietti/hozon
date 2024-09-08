@@ -22,6 +22,9 @@ FROM alpine:latest
 # Set the Current Working Directory inside the container
 WORKDIR /root/
 
+# COPY env variables
+COPY .env .env
+
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/hozon .
 

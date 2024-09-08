@@ -9,33 +9,37 @@ import (
 	"time"
 )
 
-type PGBackupSettings struct {
-	DbName           string
-	DbUser           string
-	DbPass           string
-	DbHost           string
-	DbPort           int
-	BackupFrequency  int
-	CleanBackupDir   bool
-	TelegramSettings telegram.TelegramSettings
+type BackupSettings struct {
+	BackupFrequency int
+	CleanDirectory  bool
 }
 
-func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
+type PostgresSettings struct {
+	DbName string
+	DbUser string
+	DbPass string
+	DbHost string
+	DbPort int
+}
 
-	// delete previous backups
-	files, err := os.ReadDir(backupDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to read backup directory: %v", err)
-	}
+func runBackup(dbSettings PostgresSettings, backupDir string, cleanDir bool) (string, error) {
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
+	if cleanDir {
+		// delete previous backups
+		files, err := os.ReadDir(backupDir)
+		if err != nil {
+			return "", fmt.Errorf("failed to read backup directory: %v", err)
 		}
 
-		err := os.Remove(fmt.Sprintf("%s/%s", backupDir, file.Name()))
-		if err != nil {
-			return "", fmt.Errorf("failed to delete previous backup: %v", err)
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+
+			err := os.Remove(fmt.Sprintf("%s/%s", backupDir, file.Name()))
+			if err != nil {
+				return "", fmt.Errorf("failed to delete previous backup: %v", err)
+			}
 		}
 	}
 
@@ -54,7 +58,7 @@ func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
 
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dbSettings.DbPass))
 
-	_, err = cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("failed to execute pg_dump: %v", err)
 	}
@@ -62,44 +66,42 @@ func runBackup(dbSettings PGBackupSettings, backupDir string) (string, error) {
 	return backupFile, nil
 }
 
-func InitBackupProcess(backupSettings PGBackupSettings) {
+func InitBackupProcess(postgresSettings PostgresSettings, telegramSettings telegram.TelegramSettings, backupSettings BackupSettings) {
 
-	tgSettings := backupSettings.TelegramSettings
-
-	telegram.SendGreeting(tgSettings.TGBotToken, tgSettings.TGChatID)
-	logBackup(backupSettings.TelegramSettings.TGBotToken, backupSettings.TelegramSettings.TGChatID, "Starting backup process...", false)
+	telegram.SendGreeting(telegramSettings.TGBotToken, telegramSettings.TGChatID)
+	logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Starting backup process...", false)
 
 	backupDir := "./backups"
 	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
 		err := os.MkdirAll(backupDir, 0755)
 		if err != nil {
-			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to create backup directory!", true)
+			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to create backup directory!", true)
 			os.Exit(1)
 		}
 	}
 
-	filePath, err := runBackup(backupSettings, backupDir)
+	filePath, err := runBackup(postgresSettings, backupDir, backupSettings.CleanDirectory)
 	if err != nil {
-		logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to backup database!", true)
+		logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to backup database!", true)
 		os.Exit(1)
 	}
 
-	logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "First backup completed successfully.", false)
-	sendFile(tgSettings.TGBotToken, tgSettings.TGChatID, filePath)
+	logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "First backup completed successfully.", false)
+	sendFile(telegramSettings.TGBotToken, telegramSettings.TGChatID, filePath)
 
 	ticker := time.NewTicker(time.Duration(backupSettings.BackupFrequency) * time.Hour)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Starting scheduled backup process...", false)
+		logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Starting scheduled backup process...", false)
 
-		filePath, err := runBackup(backupSettings, backupDir)
+		filePath, err := runBackup(postgresSettings, backupDir, backupSettings.CleanDirectory)
 
 		if err != nil {
-			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
+			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Failed to run scheduled database backup! Process will not stop", true)
 		} else {
-			logBackup(tgSettings.TGBotToken, tgSettings.TGChatID, "Scheduled backup process completed successfully.", false)
-			sendFile(tgSettings.TGBotToken, tgSettings.TGChatID, filePath)
+			logBackup(telegramSettings.TGBotToken, telegramSettings.TGChatID, "Scheduled backup process completed successfully.", false)
+			sendFile(telegramSettings.TGBotToken, telegramSettings.TGChatID, filePath)
 		}
 	}
 }
@@ -109,15 +111,16 @@ func logBackup(token string, chatid string, message string, error bool) {
 		message = fmt.Sprintf("Error: %s", message)
 	}
 
+	telegram.SendMessage(token,
+		telegram.CreateTelegramTextRequest(chatid, message),
+	)
+
 	if error {
 		log.Fatal(message)
 	} else {
 		log.Println(message)
 	}
 
-	go telegram.SendMessage(token,
-		telegram.CreateTelegramTextRequest(chatid, message),
-	)
 }
 
 func sendFile(token string, chatid string, filePath string) {

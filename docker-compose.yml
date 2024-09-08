@@ -2,15 +2,6 @@ version: "3.8"
 
 services:
   hozon:
-    build: https://github.com/beyramtaglietti/hozon
-    command:
-      [
-        "./hozon",
-        "--tgtoken=...",
-        "--tgchatid=...",
-        "--dbname=...",
-        "--dbuser=...",
-        "--dbpass=...",
-        "--dbhost=...",
-        "--dbport=...",
-      ]
+    build: https://github.com/beyramtaglietti/hozon.git
+    env_file:
+      - .env

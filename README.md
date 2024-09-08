@@ -11,9 +11,9 @@
   - [Installation and Usage (From Source)](#installation-and-usage-from-source)
     - [Prerequisites](#prerequisites)
     - [Steps (From Source)](#steps-from-source)
-  - [Installation and Usage (Using Docker)](#installation-and-usage-using-docker)
-    - [Prerequisites (Using Docker)](#prerequisites-using-docker)
-    - [Steps (Using Docker)](#steps-using-docker)
+  - [Installation and Usage (Using Docker/Compose)](#installation-and-usage-using-dockercompose)
+    - [Prerequisites (Using Docker/Compose)](#prerequisites-using-dockercompose)
+    - [Steps (Using Docker/Compose)](#steps-using-dockercompose)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -75,24 +75,54 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
    - Create a new bot on Telegram via BotFather and obtain your bot token. [Learn more](https://core.telegram.org/bots#how-do-i-create-a-bot)
    - Get your chat ID (you can use any bot you'd like, I purposefully did not include this functionality in Hozon to keep it simple, I'd suggest using [@getmyid_bot](https://t.me/getmyid_bot), just add it to any group/channel and receive the chat ID, you can even use your userID as the chatID and have Hozon send messages privately to you).
 
-4. #### Run the binary (use --help to see the available options and flags you **NEED** to provide)
+4. #### Set the environment variables
 
    ```bash
-    ./hozon --help
+   DB_USER="..."
+   DB_NAME="..."
+   DB_PASSWORD="..."
+   DB_PORT="..."
+   DB_HOST="..."
+
+   TELEGRAM_TOKEN="..."
+   TELEGRAM_CHATID="..."
+
+   BACKUP_FREQUENCY=... # (int) in hours
+   CLEAN_DIRECTORY=... # (bool) CLEAN_DIRECTORY=true will keep the backup directory clean, false will keep all backups
    ```
 
-## Installation and Usage (Using Docker)
+5. #### Run the binary
 
-### Prerequisites (Using Docker)
+   ```bash
+    ./hozon
+   ```
+
+## Installation and Usage (Using Docker/Compose)
+
+### Prerequisites (Using Docker/Compose)
 
 - Docker
 - Telegram bot token and chat ID
 
-### Steps (Using Docker)
+### Steps (Using Docker/Compose)
 
 1. #### Copy the Docker Compose file you can find in the repository
 
-2. #### Edit the Docker Compose command
+2. #### Provide the environment variables in a `.env` file
+
+   ```bash
+   DB_USER="..."
+   DB_NAME="..."
+   DB_PASSWORD="..."
+   DB_PORT="..."
+   DB_HOST="..."
+
+   TELEGRAM_TOKEN="..."
+   TELEGRAM_CHATID="..."
+
+   BACKUP_FREQUENCY=... # (int) in hours
+   CLEAN_DIRECTORY=... # (bool) CLEAN_DIRECTORY=true will keep the backup directory clean, false will keep all backups
+   ```
 
 3. #### Run docker compose up
 

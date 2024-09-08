@@ -1,5 +1,10 @@
 package telegram
 
+type TelegramSettings struct {
+	TGBotToken string
+	TGChatID   string
+}
+
 type TelegramResponse struct {
 	Ok          bool   `json:"ok"`
 	Description string `json:"description"`
@@ -29,9 +34,4 @@ func CreateTelegramDocumentRequest(chatId, document string) telegramDocumentRequ
 		ChatId:       chatId,
 		DocumentPath: document,
 	}
-}
-
-type TelegramSettings struct {
-	TGBotToken string
-	TGChatID   string
 }
