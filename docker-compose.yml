@@ -2,6 +2,9 @@ version: "3.8"
 
 services:
   hozon:
-    build: https://github.com/beyramtaglietti/hozon.git
+    build:
+      context: https://github.com/beyramtaglietti/hozon.git
+      args:
+        POSTGRES_VERSION: ${POSTGRES_VERSION}
     env_file:
       - .env

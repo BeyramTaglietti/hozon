@@ -38,7 +38,7 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
 ## Size
 
 - The binary size is around **8MB (8,000KB)**
-- The Docker image size is around **16MB (16,000KB)**
+- The Docker image size is around **22MB (22,000KB)**
 
 ## Features
 
@@ -124,7 +124,7 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
    CLEAN_DIRECTORY=... # (bool) CLEAN_DIRECTORY=true will keep the backup directory clean, false will keep all backups
    ```
 
-3. #### Run docker compose up
+3. #### Run docker compose up (make sure to provide the desidered POSTGRES VERSION in the Docker image ARGs in order for pg_dump to work correctly - Default is 15)
 
    ```bash
     docker compose up -d

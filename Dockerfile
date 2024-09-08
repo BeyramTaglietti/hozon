@@ -25,6 +25,12 @@ WORKDIR /root/
 # COPY env variables
 COPY .env .env
 
+# Define a build argument for the PostgreSQL version
+ARG POSTGRES_VERSION=15
+
+# Install pg_dump from the specified PostgreSQL client package
+RUN apk --no-cache add "postgresql${POSTGRES_VERSION}-client"
+
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/hozon .
 
