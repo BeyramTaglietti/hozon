@@ -123,10 +123,10 @@ I will eventually add the ability to interact with a [Telegram BOT hosted locall
    BACKUP_FREQUENCY=... # (int) in hours
    CLEAN_DIRECTORY=... # (bool) CLEAN_DIRECTORY=true will keep the backup directory clean, false will keep all backups
 
-   POSTGRES_VERSION=... # (int)
+   POSTGRES_VERSION=... # (int) Default is 16, needs to match the version of the postgres image
    ```
 
-3. #### Run docker compose up (make sure to provide the desidered POSTGRES VERSION inside your `.env` file in order for pg_dump to work correctly - Default is 16)
+3. #### Run docker compose up
 
    ```bash
     docker compose up -d

@@ -22,50 +22,6 @@ type PostgresSettings struct {
 	DbPort int
 }
 
-func runBackup(dbSettings PostgresSettings, backupDir string, cleanDir bool) (string, error) {
-
-	if cleanDir {
-		// delete previous backups
-		files, err := os.ReadDir(backupDir)
-		if err != nil {
-			return "", fmt.Errorf("failed to read backup directory: %v", err)
-		}
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-
-			err := os.Remove(fmt.Sprintf("%s/%s", backupDir, file.Name()))
-			if err != nil {
-				return "", fmt.Errorf("failed to delete previous backup: %v", err)
-			}
-		}
-	}
-
-	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("HozonBackup_2006-01-02__15_04_05"))
-
-	cmd := exec.Command("pg_dump",
-		"-h", dbSettings.DbHost,
-		"-p", fmt.Sprintf("%d", dbSettings.DbPort),
-		"-U", dbSettings.DbUser,
-		"-F", "c", // Custom format
-		"-b",             // Include large objects
-		"-v",             // Verbose mode
-		"-f", backupFile, // Output file
-		dbSettings.DbName,
-	)
-
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dbSettings.DbPass))
-
-	_, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("failed to execute pg_dump: %v", err)
-	}
-
-	return backupFile, nil
-}
-
 func InitBackupProcess(postgresSettings PostgresSettings, telegramSettings telegram.TelegramSettings, backupSettings BackupSettings) {
 
 	telegram.SendGreeting(telegramSettings.TGBotToken, telegramSettings.TGChatID)
@@ -104,6 +60,59 @@ func InitBackupProcess(postgresSettings PostgresSettings, telegramSettings teleg
 			sendFile(telegramSettings.TGBotToken, telegramSettings.TGChatID, filePath)
 		}
 	}
+}
+
+func runBackup(dbSettings PostgresSettings, backupDir string, cleanDir bool) (string, error) {
+
+	if cleanDir {
+		// delete previous backups
+		err := cleanDirectory(backupDir)
+		if err != nil {
+			return "", fmt.Errorf("failed to clean backup directory: %v", err)
+		}
+	}
+
+	backupFile := fmt.Sprintf("%s/%s.dump", backupDir, time.Now().Format("HozonBackup_2006-01-02__15_04_05"))
+
+	cmd := exec.Command("pg_dump",
+		"-h", dbSettings.DbHost,
+		"-p", fmt.Sprintf("%d", dbSettings.DbPort),
+		"-U", dbSettings.DbUser,
+		"-F", "c", // Custom format
+		"-b",             // Include large objects
+		"-v",             // Verbose mode
+		"-f", backupFile, // Output file
+		dbSettings.DbName,
+	)
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", dbSettings.DbPass))
+
+	_, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to execute pg_dump: %v", err)
+	}
+
+	return backupFile, nil
+}
+
+func cleanDirectory(backupDir string) error {
+	files, err := os.ReadDir(backupDir)
+	if err != nil {
+		return fmt.Errorf("failed to read directory: %v", err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		err := os.Remove(fmt.Sprintf("%s/%s", backupDir, file.Name()))
+		if err != nil {
+			return fmt.Errorf("failed to delete file: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func logBackup(token string, chatid string, message string, error bool) {
